@@ -11,12 +11,16 @@ class App implements h3d.IDrawable {
 	var isDisposed : Bool;
 
 	public function new() {
+		trace("getting engine");
 		var engine = h3d.Engine.getCurrent();
+		trace("getting engine done");
 		if( engine != null ) {
+			trace("engine is not null");
 			this.engine = engine;
 			engine.onReady = setup;
 			haxe.Timer.delay(setup, 0);
 		} else {
+			trace("engine is null");
 			hxd.System.start(function() {
 				this.engine = engine = new h3d.Engine();
 				engine.onReady = setup;

@@ -136,7 +136,8 @@ class GlDriver extends Driver {
 
 	public function new(antiAlias=0) {
 		#if lime
-		gl = GL;
+		trace("Renderer: " + lime.app.Application.current.renderer.type);
+		gl = cast GL;
 		#elseif js
 		canvas = @:privateAccess hxd.Stage.getInstance().canvas;
 		gl = canvas.getContextWebGL({alpha:false,antialias:antiAlias>0});
@@ -350,6 +351,9 @@ class GlDriver extends Driver {
 			if( s.globals != null ) {
 				#if hl
 				gl.uniform4fv(s.globals, streamData(hl.Bytes.getArray(buf.globals.toData()), 0, s.shader.globalsSize * 16), 0, s.shader.globalsSize * 4);
+				#elseif lime 
+				var a = buf.globals.subarray(0, s.shader.globalsSize * 4);
+				gl.uniform4fv(s.globals, a);
 				#else
 				var a = buf.globals.subarray(0, s.shader.globalsSize * 4);
 				gl.uniform4fv(s.globals, a);
@@ -359,6 +363,9 @@ class GlDriver extends Driver {
 			if( s.params != null ) {
 				#if hl
 				gl.uniform4fv(s.params, streamData(hl.Bytes.getArray(buf.params.toData()), 0, s.shader.paramsSize * 16), 0, s.shader.paramsSize * 4);
+				#elseif lime 
+				var a = buf.params.subarray(0, s.shader.paramsSize * 4);
+				gl.uniform4fv(s.params, a);
 				#else
 				var a = buf.params.subarray(0, s.shader.paramsSize * 4);
 				gl.uniform4fv(s.params, a);
@@ -550,7 +557,11 @@ class GlDriver extends Driver {
 		if( depth != null ) {
 			gl.depthMask(true);
 			if( curMatBits >= 0 ) curMatBits |= Pass.depthWrite_mask;
+			#if lime
 			gl.clearDepth(depth);
+			#else
+			gl.clearDepth(depth);
+			#end
 			bits |= GL.DEPTH_BUFFER_BIT;
 		}
 		if( stencil != null ) {
@@ -705,6 +716,9 @@ class GlDriver extends Driver {
 		gl.bufferData(GL.ARRAY_BUFFER, m.size * m.stride * 4, m.flags.has(Dynamic) ? GL.DYNAMIC_DRAW : GL.STATIC_DRAW);
 		#elseif hl
 		gl.bufferDataSize(GL.ARRAY_BUFFER, m.size * m.stride * 4, m.flags.has(Dynamic) ? GL.DYNAMIC_DRAW : GL.STATIC_DRAW);
+		#elseif lime
+		var tmp = new Uint8Array(m.size * m.stride * 4);
+		gl.bufferData(GL.ARRAY_BUFFER, tmp, m.flags.has(Dynamic) ? GL.DYNAMIC_DRAW : GL.STATIC_DRAW);
 		#else
 		var tmp = new Uint8Array(m.size * m.stride * 4);
 		gl.bufferData(GL.ARRAY_BUFFER, tmp, m.flags.has(Dynamic) ? GL.DYNAMIC_DRAW : GL.STATIC_DRAW);
@@ -725,6 +739,9 @@ class GlDriver extends Driver {
 		gl.bufferData(GL.ELEMENT_ARRAY_BUFFER, count * 2, GL.STATIC_DRAW);
 		#elseif hl
 		gl.bufferDataSize(GL.ELEMENT_ARRAY_BUFFER, count * 2, GL.STATIC_DRAW);
+		#elseif lime
+		var tmp = new Uint16Array(count);
+		gl.bufferData(GL.ELEMENT_ARRAY_BUFFER, tmp, GL.STATIC_DRAW);
 		#else
 		var tmp = new Uint16Array(count);
 		gl.bufferData(GL.ELEMENT_ARRAY_BUFFER, tmp, GL.STATIC_DRAW);
@@ -896,6 +913,10 @@ class GlDriver extends Driver {
 		gl.bindBuffer(GL.ARRAY_BUFFER, v.b);
 		#if hl
 		gl.bufferSubData(GL.ARRAY_BUFFER, startVertex * stride * 4, streamData(buf.getData(),bufPos * 4,vertexCount * stride * 4), bufPos * 4 * STREAM_POS, vertexCount * stride * 4);
+		#elseif lime
+		var buf = bytesToUint8Array(buf);
+		var sub = new Uint8Array(buf.buffer, bufPos * 4, vertexCount * stride * 4);
+		gl.bufferSubData(GL.ARRAY_BUFFER, startVertex * stride * 4, sub);
 		#else
 		var buf = bytesToUint8Array(buf);
 		var sub = new Uint8Array(buf.buffer, bufPos * 4, vertexCount * stride * 4);
@@ -909,6 +930,10 @@ class GlDriver extends Driver {
 		#if hl
 		var data = #if hl hl.Bytes.getArray(buf.getNative()) #else buf.getNative() #end;
 		gl.bufferSubData(GL.ELEMENT_ARRAY_BUFFER, startIndice * 2, streamData(data,bufPos*2,indiceCount*2), bufPos * 2 * STREAM_POS, indiceCount * 2);
+		#elseif lime
+		var buf = new Uint16Array(buf.getNative());
+		var sub = new Uint16Array(buf.buffer, bufPos * 2, indiceCount);
+		gl.bufferSubData(GL.ELEMENT_ARRAY_BUFFER, startIndice * 2, sub);
 		#else
 		var buf = new Uint16Array(buf.getNative());
 		var sub = new Uint16Array(buf.buffer, bufPos * 2, indiceCount);
@@ -922,6 +947,10 @@ class GlDriver extends Driver {
 		gl.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, i);
 		#if hl
 		gl.bufferSubData(GL.ELEMENT_ARRAY_BUFFER, startIndice * 2, streamData(buf.getData(),bufPos * 2, indiceCount * 2), bufPos * 2 * STREAM_POS, indiceCount * 2);
+		#elseif lime
+		var buf = bytesToUint8Array(buf);
+		var sub = new Uint8Array(buf.buffer, bufPos * 2, indiceCount * 2);
+		gl.bufferSubData(GL.ELEMENT_ARRAY_BUFFER, startIndice * 2, sub);
 		#else
 		var buf = bytesToUint8Array(buf);
 		var sub = new Uint8Array(buf.buffer, bufPos * 2, indiceCount * 2);
